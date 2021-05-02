@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 /**
@@ -13,13 +14,31 @@ import java.util.ArrayList;
  * @create: 2021-04-30 21:22
  **/
 public class WhiteBoard extends JPanel {
-    private static volatile ClientDrawMessage message = new ClientDrawMessage();
+    private volatile Color color;
+    private volatile String shape;
     private ArrayList<AbstractShape> shapes = new ArrayList<>();
+    private ObjectOutputStream out;
 
-    public static ClientDrawMessage getMessage() {
-        return message;
+
+    public Color getColor() {
+        return color;
     }
 
+    public String getShape() {
+        return shape;
+    }
+
+    public void setShapes(ArrayList<AbstractShape> shapes) {
+        this.shapes = shapes;
+    }
+
+    public WhiteBoard(ObjectOutputStream out) {
+        this.out = out;
+        setLayout(new FlowLayout());
+        setVisible(true);
+        init();
+
+    }
     public WhiteBoard() {
         setLayout(new FlowLayout());
         setVisible(true);
@@ -27,7 +46,7 @@ public class WhiteBoard extends JPanel {
 
     }
 
-    private void init(){
+    private void init() {
         JFrame mainWindow = new JFrame("White Board");
         mainWindow.setSize(1100, 700);
         // 窗体设置居中
@@ -51,10 +70,11 @@ public class WhiteBoard extends JPanel {
         DrawActionListener listener = new DrawActionListener();
         mainWindow.setVisible(true);
 
-        Graphics g = this.getGraphics();
-
-        listener.setGraphics(g);
+        Graphics graphics = this.getGraphics();
+        listener.setGraphics(graphics);
         listener.setShapes(shapes);
+        listener.setOut(out);
+        listener.setWhiteBoard(this);
         addMouseListener(listener);
         addMouseMotionListener(listener);
         addKeyListener(listener);
@@ -66,14 +86,14 @@ public class WhiteBoard extends JPanel {
         JPanel shapeSelection = new JPanel();
         shapeSelection.setPreferredSize(new Dimension(100, 700));
         mainWindow.add(shapeSelection, BorderLayout.WEST);
-        String[] shapeNames = {"Line","Circle","Oval","Rectangle","Text"};
-        for (String shapeName : shapeNames){
+        String[] shapeNames = {"Line", "Circle", "Oval", "Rectangle", "Text"};
+        for (String shapeName : shapeNames) {
             JButton button = new JButton(shapeName);
             button.addActionListener(new ActionListener() {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    WhiteBoard.message.setShape(shapeName);
+                    shape = shapeName;
                     requestFocus();
                 }
             });
@@ -84,8 +104,8 @@ public class WhiteBoard extends JPanel {
         colorButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Color color = JColorChooser.showDialog(mainWindow, "Color Chooser", Color.BLACK);
-                WhiteBoard.message.setColor(color);
+                Color selectedColor = JColorChooser.showDialog(mainWindow, "Color Chooser", Color.BLACK);
+                color = selectedColor;
             }
         });
         shapeSelection.add(colorButton);
@@ -94,13 +114,10 @@ public class WhiteBoard extends JPanel {
     @Override
     public void paint(Graphics g) {
         super.paint(g);
-        for (AbstractShape shape : shapes){
+        for (AbstractShape shape : shapes) {
             shape.draw(g);
         }
     }
 
 
-    public static void main(String[] args) {
-        new WhiteBoard();
-    }
 }

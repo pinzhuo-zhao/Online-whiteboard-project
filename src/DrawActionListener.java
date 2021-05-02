@@ -4,6 +4,8 @@ import shapes.Rectangle;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 /**
@@ -16,7 +18,13 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
     private int x1,y1,x2,y2;
     private Graphics graphics;
     private String text;
+    private WhiteBoard whiteBoard;
     private ArrayList<AbstractShape> shapes;
+    private ObjectOutputStream out;
+
+    public void setWhiteBoard(WhiteBoard whiteBoard) {
+        this.whiteBoard = whiteBoard;
+    }
 
     public void setShapes(ArrayList<AbstractShape> shapes) {
         this.shapes = shapes;
@@ -24,6 +32,10 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
 
     public void setGraphics(Graphics graphics) {
         this.graphics = graphics;
+    }
+
+    public void setOut(ObjectOutputStream out) {
+        this.out = out;
     }
 
     @Override
@@ -43,26 +55,35 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
         x2 = e.getX();
         y2 = e.getY();
 //        graphics.drawLine(x1, y1, x2, y2);
-        graphics.setColor(WhiteBoard.getMessage().getColor());
+        graphics.setColor(whiteBoard.getColor());
         try {
-            String shape = WhiteBoard.getMessage().getShape();
+            String shape = whiteBoard.getShape();
             if (shape.equals("Line")) {
                 graphics.drawLine(x1, y1, x2, y2);
-                shapes.add(new Line(x1,y1,x2,y2,WhiteBoard.getMessage().getColor()));
+                Line line = new Line(x1, y1, x2, y2, whiteBoard.getColor());
+                shapes.add(line);
+                out.writeObject(line);
             } else if (shape.equals("Rectangle")) {
                 graphics.drawRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
-                shapes.add(new Rectangle(x1,y1,x2,y2,WhiteBoard.getMessage().getColor()));
+                Rectangle rectangle = new Rectangle(x1, y1, x2, y2, whiteBoard.getColor());
+                shapes.add(rectangle);
+                out.writeObject(rectangle);
             } else if (shape.equals("Oval")) {
                 graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
-                shapes.add(new Oval(x1,y1,x2,y2,WhiteBoard.getMessage().getColor()));
+                Oval oval = new Oval(x1, y1, x2, y2, whiteBoard.getColor());
+                shapes.add(oval);
+                out.writeObject(oval);
             } else if (shape.equals("Circle")) {
                 graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)),Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)));
-                shapes.add(new Circle(x1,y1,x2,y2,WhiteBoard.getMessage().getColor()));
+                Circle circle = new Circle(x1, y1, x2, y2, whiteBoard.getColor());
+                shapes.add(circle);
+                out.writeObject(circle);
             }
         }catch(NullPointerException ex){
 //            JOptionPane.showMessageDialog(null, "alert", "alert", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException ioException) {
+            ioException.printStackTrace();
         }
-
 
 
     }
@@ -90,12 +111,18 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {
         text = String.valueOf(e.getKeyChar());
-        graphics.setColor(WhiteBoard.getMessage().getColor());
-        String shape = WhiteBoard.getMessage().getShape();
+        graphics.setColor(whiteBoard.getColor());
+        String shape = whiteBoard.getShape();
         if (shape.equals("Text")) {
             graphics.drawString(text, x1, y1);
-            shapes.add(new Text(x1,y1,x2,y2,WhiteBoard.getMessage().getColor(),text));
-            x1 += 10;
+            Text inputText = new Text(x1,y1,x2,y2,whiteBoard.getColor(),text);
+            shapes.add(inputText);
+            try {
+                out.writeObject(inputText);
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+            x1 += 5;
         }
 
 
