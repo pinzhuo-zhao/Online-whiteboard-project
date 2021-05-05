@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * @program: COMP90015A2
@@ -15,21 +15,33 @@ import java.util.ArrayList;
  **/
 public class WhiteBoard extends JPanel {
     private volatile Color color;
-    private volatile String shape;
-    private ArrayList<AbstractShape> shapes = new ArrayList<>();
+    private volatile String shapeType;
+    private LinkedList<AbstractShape> shapes = new LinkedList<>();
     private ObjectOutputStream out;
+    private JList userList = new JList();
 
+    public void setUserList(JList userList) {
+        this.userList = userList;
+    }
+
+    public JList getUserList() {
+        return userList;
+    }
 
     public Color getColor() {
         return color;
     }
 
-    public String getShape() {
-        return shape;
+    public String getShapeType() {
+        return shapeType;
     }
 
-    public void setShapes(ArrayList<AbstractShape> shapes) {
+    public void setShapes(LinkedList<AbstractShape> shapes) {
         this.shapes = shapes;
+    }
+
+    public LinkedList<AbstractShape> getShapes() {
+        return shapes;
     }
 
     public WhiteBoard(ObjectOutputStream out) {
@@ -48,24 +60,24 @@ public class WhiteBoard extends JPanel {
 
     private void init() {
         JFrame mainWindow = new JFrame("White Board");
-        mainWindow.setSize(1100, 700);
-        // 窗体设置居中
+        mainWindow.setSize(800, 600);
         mainWindow.setLocationRelativeTo(null);
-        // 设置窗体关闭
         mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        // 设置窗体边界布局
+//        mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH);
         mainWindow.setLayout(new BorderLayout());
+        addShapePanel(mainWindow);
+        addUserList(mainWindow);
+        //adding the white board panel to the main window
         mainWindow.add(this, BorderLayout.CENTER);
 
-        addShapePanel(mainWindow);
+
        /* JPanel colorSelection = new JPanel();
         colorSelection.setPreferredSize(new Dimension(100, 700));
         mainWindow.add(colorSelection, BorderLayout.WEST);*/
 
 
-        this.setPreferredSize(new Dimension(1000, 700));
-        this.setBackground(Color.gray);
+        this.setPreferredSize(new Dimension(600, 600));
+        this.setBackground(Color.lightGray);
 
         DrawActionListener listener = new DrawActionListener();
         mainWindow.setVisible(true);
@@ -84,8 +96,8 @@ public class WhiteBoard extends JPanel {
     private void addShapePanel(JFrame mainWindow) {
         //adding the panel for selecting the shape to draw
         JPanel shapeSelection = new JPanel();
-        shapeSelection.setPreferredSize(new Dimension(100, 700));
-        mainWindow.add(shapeSelection, BorderLayout.WEST);
+//        shapeSelection.setBackground(Color.white);
+        shapeSelection.setPreferredSize(new Dimension(100, 600));
         String[] shapeNames = {"Line", "Circle", "Oval", "Rectangle", "Text"};
         for (String shapeName : shapeNames) {
             JButton button = new JButton(shapeName);
@@ -93,13 +105,14 @@ public class WhiteBoard extends JPanel {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    shape = shapeName;
+                    shapeType = shapeName;
                     requestFocus();
                 }
             });
             shapeSelection.add(button);
 
         }
+        //provide a JColorChooser for users to select color for drawing shapes
         JButton colorButton = new JButton("Colors");
         colorButton.addActionListener(new ActionListener() {
             @Override
@@ -109,6 +122,18 @@ public class WhiteBoard extends JPanel {
             }
         });
         shapeSelection.add(colorButton);
+        mainWindow.add(shapeSelection, BorderLayout.WEST);
+    }
+
+    private void addUserList(JFrame mainWindow){
+        JPanel userListPanel = new JPanel();
+        userListPanel.setPreferredSize(new Dimension(100, 600));
+        JLabel users = new JLabel("Online Users");
+        userListPanel.add(users, BorderLayout.NORTH);
+        userListPanel.add(userList, BorderLayout.SOUTH);
+        mainWindow.add(userListPanel, BorderLayout.EAST);
+
+
     }
 
     @Override
@@ -118,6 +143,11 @@ public class WhiteBoard extends JPanel {
             shape.draw(g);
         }
     }
+    public void paintSingleShape(Graphics g, AbstractShape shape) {
+        shape.draw(g);
+    }
 
-
+    public static void main(String[] args) {
+        new WhiteBoard();
+    }
 }

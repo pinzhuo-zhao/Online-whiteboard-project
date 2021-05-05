@@ -1,13 +1,12 @@
 import shapes.AbstractShape;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
+import javax.swing.*;
+import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * @program: COMP90015A2
@@ -24,17 +23,16 @@ public class CreateWhiteBoard {
 
     public static void main(String[] args) {
         Socket client = null;
-        User currUser = new User();
+        String usernameFromInput = null;
         try {
 //            String ipFromInput = args[0];
 //            String portFromInput = args[1];
 //            String usernameFromInput = args[2];
             String ipFromInput = "localhost";
             String portFromInput = "9999";
-            String usernameFromInput = "Manager";
+            usernameFromInput = "Manager";
             int port = Integer.parseInt(portFromInput);
             client = new Socket(ipFromInput,port);
-            currUser.setUsername(usernameFromInput);
 
         } catch (NumberFormatException e) {
             System.out.println("Please enter a valid number for port");
@@ -49,29 +47,41 @@ public class CreateWhiteBoard {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ObjectOutputStream out = null;
-        ObjectInputStream in = null;
+        ObjectOutputStream oos = null;
+        ObjectInputStream ois = null;
+
         WhiteBoard whiteBoard = null;
         if (client != null){
             connect = true;
             try {
-                out = new ObjectOutputStream(client.getOutputStream());
+                oos = new ObjectOutputStream(client.getOutputStream());
+                ois = new ObjectInputStream(client.getInputStream());
 
-                whiteBoard = new WhiteBoard(out);
+                whiteBoard = new WhiteBoard(oos);
+               //sending username to the server
+                DataOutputStream dos = new DataOutputStream(client.getOutputStream());
+                dos.writeUTF(usernameFromInput);
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            //每次鼠标操作都执行一次方法
         }
-
         while (connect){
             try {
-                in = new ObjectInputStream(client.getInputStream());
-                Object readObject = in.readObject();
-                ArrayList<AbstractShape> shapes = (ArrayList<AbstractShape>)readObject;
-                whiteBoard.setShapes(shapes);
-                whiteBoard.paint(whiteBoard.getGraphics());
+                Object readObject = ois.readUnshared();
+                if (readObject instanceof LinkedList) {
+                    LinkedList<AbstractShape>  shapes = (LinkedList) readObject;
+                    whiteBoard.setShapes(shapes);
+                    whiteBoard.paint(whiteBoard.getGraphics());
+                }
+                else if (readObject instanceof StringBuffer){
+                    StringBuffer buffer = (StringBuffer) readObject;
+                    String s = buffer.toString();
+                    String[] split = s.split(",");
+                    whiteBoard.getUserList().setListData(split);
+                }
+
             }
             catch (StreamCorruptedException e){
                 e.printStackTrace();
@@ -84,5 +94,40 @@ public class CreateWhiteBoard {
 
 
         }
+
+
     }
+ /*   private static void getWhiteBoardMessage(WhiteBoard whiteBoard, Socket client){
+        ObjectInputStream in = null;
+        try {
+            in = new ObjectInputStream(client.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        while (connect){
+            try {
+                Object readObject = in.readObject();
+                if (readObject instanceof LinkedList) {
+                    LinkedList<AbstractShape> shapes = (LinkedList<AbstractShape>) readObject;
+                    whiteBoard.setShapes(shapes);
+                    whiteBoard.paint(whiteBoard.getGraphics());
+                }
+                else if (readObject instanceof StringBuffer){
+                    StringBuffer buffer = (StringBuffer) readObject;
+                    System.out.println(buffer.toString());
+                }
+
+            }
+            catch (StreamCorruptedException e){
+                e.printStackTrace();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+    }*/
 }

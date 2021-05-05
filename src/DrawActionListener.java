@@ -1,12 +1,11 @@
 import shapes.*;
 import shapes.Rectangle;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * @program: COMP90015A2
@@ -19,14 +18,14 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
     private Graphics graphics;
     private String text;
     private WhiteBoard whiteBoard;
-    private ArrayList<AbstractShape> shapes;
+    private LinkedList<AbstractShape> shapes;
     private ObjectOutputStream out;
 
     public void setWhiteBoard(WhiteBoard whiteBoard) {
         this.whiteBoard = whiteBoard;
     }
 
-    public void setShapes(ArrayList<AbstractShape> shapes) {
+    public void setShapes(LinkedList<AbstractShape> shapes) {
         this.shapes = shapes;
     }
 
@@ -57,7 +56,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
 //        graphics.drawLine(x1, y1, x2, y2);
         graphics.setColor(whiteBoard.getColor());
         try {
-            String shape = whiteBoard.getShape();
+            String shape = whiteBoard.getShapeType();
             if (shape.equals("Line")) {
                 graphics.drawLine(x1, y1, x2, y2);
                 Line line = new Line(x1, y1, x2, y2, whiteBoard.getColor());
@@ -100,7 +99,37 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
 
     @Override
     public void mouseDragged(MouseEvent e) {
+    /*    x2 = e.getX();
+        y2 = e.getY();
+//        graphics.drawLine(x1, y1, x2, y2);
+        graphics.setColor(whiteBoard.getColor());
+        try {
+            String shape = whiteBoard.getShapeType();
+            if (shape.equals("Line")) {
+                whiteBoard.paint(graphics);
+                graphics.drawLine(x1, y1, x2, y2);
 
+
+
+
+            } else if (shape.equals("Rectangle")) {
+                whiteBoard.paint(graphics);
+                graphics.drawRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+
+
+            } else if (shape.equals("Oval")) {
+                whiteBoard.paint(graphics);
+                graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+
+
+            } else if (shape.equals("Circle")) {
+                whiteBoard.paint(graphics);
+                //graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)),Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)));
+                graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(x2 - x1));
+            }
+        }catch(NullPointerException ex){
+//            JOptionPane.showMessageDialog(null, "alert", "alert", JOptionPane.ERROR_MESSAGE);*/
+    //    }
     }
 
     @Override
@@ -112,7 +141,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
     public void keyTyped(KeyEvent e) {
         text = String.valueOf(e.getKeyChar());
         graphics.setColor(whiteBoard.getColor());
-        String shape = whiteBoard.getShape();
+        String shape = whiteBoard.getShapeType();
         if (shape.equals("Text")) {
             graphics.drawString(text, x1, y1);
             Text inputText = new Text(x1,y1,x2,y2,whiteBoard.getColor(),text);
@@ -122,7 +151,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
-            x1 += 5;
+            x1 += 8;
         }
 
 
@@ -135,8 +164,5 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-       /* text = String.valueOf(e.getKeyChar());
-        graphics.drawString(text,x1,y1);
-        System.out.println("按键盘");*/
     }
 }

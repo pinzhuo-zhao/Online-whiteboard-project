@@ -1,13 +1,11 @@
 import shapes.AbstractShape;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @program: COMP90015A2
@@ -16,12 +14,14 @@ import java.util.ArrayList;
  * @create: 2021-05-02 16:16
  **/
 public class WhiteBoardServer {
-    private static volatile Integer port;
-    private static volatile ArrayList<AbstractShape> storedShapes = new ArrayList<>();
-    private static volatile ArrayList<Socket> clients = new ArrayList<>();
-    private static volatile ArrayList<User> users = new ArrayList<>();
+    private static volatile Integer port =9999;
+    private static volatile LinkedList<AbstractShape> storedShapes = new LinkedList<>();
+    private static volatile LinkedList<User> users = new LinkedList<>();
+    private static volatile User manager;
+    private static volatile AtomicInteger count = new AtomicInteger(1);
     private static Boolean launched = false;
     private static Boolean whiteboardCreated = false;
+
 
 
     public static void setPort(String port){
@@ -31,46 +31,118 @@ public class WhiteBoardServer {
     }
 
     private static void serveWhiteBoard(Socket client){
-        ObjectInputStream in;
-        ObjectOutputStream out = null;
+        ObjectInputStream ois;
+        ObjectOutputStream oos = null;
+        DataInputStream dis;
+        DataOutputStream dos = null;
+        User currUser = null;
         try {
-            in = new ObjectInputStream(client.getInputStream());
-            out = new ObjectOutputStream(client.getOutputStream());
-            out.writeObject(storedShapes);
+            ois = new ObjectInputStream(client.getInputStream());
+            oos = new ObjectOutputStream(client.getOutputStream());
+            dis = new DataInputStream(client.getInputStream());
+            dos = new DataOutputStream(client.getOutputStream());
+
+            String username = dis.readUTF();
+            currUser = new User(count.getAndIncrement(),username,client,ois,oos,dis,dos);
+            users.add(currUser);
+            if (manager == null){
+                manager = currUser;
+            }
+            /**
+             * 在此处给MANAGER发弹窗，如果允许了，再给currUser发第一条回复
+             * 允许:这里直接往下走，拒绝:直接断开当前socket并回复弹窗
+             */
+            currUser.getOos().writeObject(storedShapes);
+            StringBuffer buffer = new StringBuffer();
+            for (User user : users){
+                buffer.append(user.getId() + "."+ user.getUsername());
+                buffer.append(",");
+            }
+            for (User user : users) {
+                user.getOos().writeUnshared(buffer);
+            }
             while (true){
-                Object readObject = in.readObject();
+                Object readObject = currUser.getOis().readObject();
                 AbstractShape shape = null;
                 if (readObject instanceof AbstractShape){
                     shape = (AbstractShape)readObject;
                 }
                 storedShapes.add(shape);
 
-//                out.writeObject(storedShapes);
-                for (Socket mySocket : clients){
-                    out = new ObjectOutputStream(mySocket.getOutputStream());
-                    out.writeObject(storedShapes);
+                for (User user : users){
+                    //make sure thread safety, write/readUnshared are used instead of write/readObject
+                    user.getOos().writeUnshared(storedShapes);
+
                 }
             }
 
         } catch (IOException e) {
+            /**
+             * 如果退出用户是管理员的话，通知所有窗口可以关闭了，并关闭所有SOCKET
+             */
+            if (currUser == manager){
+                for (User user : users){
+                    try {
+                        user.getSocket().close();
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
+                    }
+                }
+            }
+
+            //when an IO exception occurred, it means the current client/socket has disconnected
+            // so remove it from the list
+            users.remove(currUser);
+            StringBuffer buffer = new StringBuffer();
+            for (User user : users){
+                buffer.append(user.getId() + "."+ user.getUsername());
+                buffer.append(",");
+            }
+            for (User user : users){
+                try {
+                    user.getOos().writeUnshared(buffer);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+            }
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
 
+    private static void serveUserList(Socket client){
+        DataInputStream in;
+        DataOutputStream out = null;
+
+        try {
+            in = new DataInputStream(client.getInputStream());
+            out = new DataOutputStream(client.getOutputStream());
+            String username = in.readUTF();
+            User currUser = new User();
+            currUser.setSocket(client);
+            currUser.setId(count.getAndIncrement());
+            currUser.setUsername(username);
+            users.add(currUser);
+            System.out.println(users);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public static void main(String[] args) {
-        ServerGUI gui = new ServerGUI();
+//        ServerGUI gui = new ServerGUI();
         ServerSocket socket = null;
         while (!launched) {
             if (port != null) {
                 try {
                     socket = new ServerSocket(port);
                     launched = true;
-                    gui.getResponse().setText("White Board Server launched at port: " + port);
+//                    gui.getResponse().setText("White Board Server launched at port: " + port);
                     //prompt the user if the input port is already in use
                 } catch (BindException e) {
-                    gui.getResponse().setText("Port already in use, try again");
+//                    gui.getResponse().setText("Port already in use, try again");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -80,9 +152,14 @@ public class WhiteBoardServer {
         try {
             while (true) {
                 Socket client = socket.accept();
-                clients.add(client);
+                /**
+                 * 怎么给MANAGER 的socket发送弹窗？
+                 * 直接在此处判断MANAGER是否已经有了，如果有了，就在此处
+                 */
                 Thread whiteBoardThread = new Thread(() -> serveWhiteBoard(client));
+//                Thread userListThread = new Thread(() -> serveUserList(client));
                 whiteBoardThread.start();
+//                userListThread.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -98,4 +175,5 @@ public class WhiteBoardServer {
         }
 
     }
+
 }
