@@ -1,5 +1,6 @@
 import shapes.AbstractShape;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -64,8 +65,8 @@ public class JoinWhiteBoard {
                 if (permitMessage.equals("permitted")) {
                     whiteBoard = new WhiteBoard(oos);
                 }
-                else {
-                    System.out.println(permitMessage);
+                else if (permitMessage.equals("rejected")) {
+                    System.out.println("Sorry, you are not allowed to access");
                     System.exit(0);
                 }
 
@@ -86,10 +87,14 @@ public class JoinWhiteBoard {
                     StringBuffer buffer = (StringBuffer) readObject;
                     String s = buffer.toString();
                     String[] split = s.split(",");
-                    /**
-                     * 要做踢人功能的话，只在这里加listener,发消息给Server找到和ID对应的USER的socket,然后CLOSE
-                     */
                     whiteBoard.getUserList().setListData(split);
+                }
+                else if (readObject instanceof String){
+                    String message = ((String) readObject);
+                    if (message.equals("quit")) {
+                        JOptionPane.showMessageDialog(null,"The manager has disconnected, please close the app","Notification",JOptionPane.WARNING_MESSAGE);
+
+                    }
                 }
 
 

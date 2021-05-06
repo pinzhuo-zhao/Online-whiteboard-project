@@ -60,7 +60,7 @@ public class CreateWhiteBoard {
                 dos = new DataOutputStream(client.getOutputStream());
 
                 whiteBoard = new WhiteBoard(oos);
-               //sending username to the server
+                //sending username to the server
 
                 dos.writeUTF(usernameFromInput);
                 //send an identifier to make server know that this socket is the manager
@@ -83,17 +83,22 @@ public class CreateWhiteBoard {
                     String s = buffer.toString();
                     String[] split = s.split(",");
                     /**
-                     * 要做踢人功能的话，只在这里加listener,发消息给Server找到和ID对应的USER的socket,然后CLOSE
+                     * 发消息给Server找到和ID对应的USER的socket,然后CLOSE
+                     * 从这里往下
                      */
-                    whiteBoard.getUserList().setListData(split);
+                    JList userList = whiteBoard.getUserList();
+                    userList.setListData(split);
+                    ListSelectionModel selectionModel = whiteBoard.getUserList().getSelectionModel();
+//                    selectionModel.addListSelectionListener();
+
                 } else if (readObject instanceof String){
                     String requestedUsername = (String) readObject;
                     int i = JOptionPane.showConfirmDialog(null, requestedUsername + " wants to share your white board.", "New User", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                     if (i == JOptionPane.YES_OPTION){
-                        oos.writeUnshared("permit");
+                        oos.writeObject("accept-"+ requestedUsername);
                     }
                     else{
-                        oos.writeUnshared("reject");
+                        oos.writeObject("reject-" + requestedUsername);
                     }
                 }
 
@@ -132,7 +137,6 @@ public class CreateWhiteBoard {
                     StringBuffer buffer = (StringBuffer) readObject;
                     System.out.println(buffer.toString());
                 }
-
             }
             catch (StreamCorruptedException e){
                 e.printStackTrace();
@@ -142,8 +146,6 @@ public class CreateWhiteBoard {
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
-
-
         }
     }*/
 }

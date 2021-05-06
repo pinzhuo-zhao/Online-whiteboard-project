@@ -22,6 +22,5 @@ public class Text extends AbstractShape {
     public void draw(Graphics graphics) {
         graphics.setColor(color);
         graphics.drawString(text, x1, y1);
-        x1 += 10;
     }
 }

@@ -147,7 +147,5 @@ public class WhiteBoard extends JPanel {
         shape.draw(g);
     }
 
-    public static void main(String[] args) {
-        new WhiteBoard();
-    }
+
 }

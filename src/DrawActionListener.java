@@ -143,7 +143,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
         graphics.setColor(whiteBoard.getColor());
         String shape = whiteBoard.getShapeType();
         if (shape.equals("Text")) {
-            graphics.drawString(text, x1, y1);
+//            graphics.drawString(text, x1, y1);
             Text inputText = new Text(x1,y1,x2,y2,whiteBoard.getColor(),text);
             shapes.add(inputText);
             try {
@@ -151,7 +151,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
-            x1 += 8;
+            x1 += 10;
         }
 
 

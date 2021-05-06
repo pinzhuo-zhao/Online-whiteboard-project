@@ -21,6 +21,9 @@ public class WhiteBoardServer {
     private static volatile Integer port =9999;
     private static volatile LinkedList<AbstractShape> storedShapes = new LinkedList<>();
     private static volatile LinkedList<User> users = new LinkedList<>();
+    private static volatile LinkedList<String> allowedUsers = new LinkedList<>();
+    private static volatile LinkedList<String> rejectedUsers = new LinkedList<>();
+
     private static volatile User manager;
     private static volatile AtomicInteger count = new AtomicInteger(1);
     private static Boolean launched = false;
@@ -50,82 +53,103 @@ public class WhiteBoardServer {
             currUser = new User(count.getAndIncrement(),username,client,ois,oos,dis,dos);
 
             boolean isManager = dis.readBoolean();
+
             if (isManager && manager == null){
                 manager = currUser;
-                currUser.setAccess(true);
+                allowedUsers.add(currUser.getId()+"."+currUser.getUsername());
 
             }
 
             else if (manager != null && !isManager){
                 //if manager is not null, it means the board has been created
                 // incoming users are allowed to enter the white board
-                manager.getOos().writeUnshared(username);
+                manager.getOos().writeUnshared(currUser.getId()+"."+currUser.getUsername());
 //                try {
 //                    Thread.sleep(1000);
 //                } catch (InterruptedException e) {
 //                    e.printStackTrace();
 //                }
-                String s = manager.getDis().readUTF();
-                System.out.println(s);
-                if (s.equals("permit")){
-                    currUser.getDos().writeUTF("permitted");
-                    currUser.setAccess(true);
-
-                }
-                else {
-                    currUser.getDos().writeUTF("Sorry, you are not allowed to access");
-                    currUser.getSocket().close();
-                }
+//                String s = manager.getDis().readUTF();
+//                System.out.println(s);
+//                if (s.equals("permit")){
+//                    currUser.getDos().writeUTF("permitted");
+//                    currUser.setAccess(true);
+//
+//                }
+//                else {
+//                    currUser.getDos().writeUTF("Sorry, you are not allowed to access");
+//                    currUser.getSocket().close();
+//                }
             }
             /**
              * 在此处给MANAGER发弹窗，如果允许了，再给currUser发第一条回复
              * 允许:这里直接往下走，拒绝:直接断开当前socket并回复弹窗
              */
-
-                users.add(currUser);
-                currUser.getOos().writeObject(storedShapes);
-                StringBuffer buffer = new StringBuffer();
-                for (User user : users) {
-                    buffer.append(user.getId() + "." + user.getUsername());
-                    buffer.append(",");
+            while (!allowedUsers.contains(currUser.getId()+"."+currUser.getUsername())){
+                if (rejectedUsers.contains(currUser.getId()+"."+currUser.getUsername())){
+                    currUser.getDos().writeUTF("rejected");
                 }
-                for (User user : users) {
-                    user.getOos().writeUnshared(buffer);
-                }
+            }
+            if (!(currUser == manager)) {
+                currUser.getDos().writeUTF("permitted");
+            }
+            users.add(currUser);
+            currUser.getOos().writeObject(storedShapes);
+            StringBuffer buffer = new StringBuffer();
+            for (User user : users) {
+                buffer.append(user.getId() + "." + user.getUsername());
+                buffer.append(",");
+            }
+            for (User user : users) {
+                user.getOos().writeUnshared(buffer);
+            }
 
-                while (true) {
-                    Object readObject = currUser.getOis().readObject();
-                    AbstractShape shape = null;
-                    if (readObject instanceof AbstractShape) {
-                        shape = (AbstractShape) readObject;
-                    }
+            while (true) {
+                Object readObject = currUser.getOis().readObject();
+                AbstractShape shape = null;
+                if (readObject instanceof AbstractShape) {
+                    shape = (AbstractShape) readObject;
                     storedShapes.add(shape);
-
                     for (User user : users) {
                         //make sure thread safety, write/readUnshared are used instead of write/readObject
                         user.getOos().writeUnshared(storedShapes);
-
                     }
+                }else if (readObject instanceof String){
+                    String requestedUsername = (String) readObject;
+                    String[] split = requestedUsername.split("-");
+                    if (split[0].equals("accept")) {
+                        System.out.println(split[0]);
+                        System.out.println(split[1]);
+                        allowedUsers.add(split[1]);
+                    } else if (split[0].equals("reject")){
+                        rejectedUsers.add(split[1]);
+                    }
+
                 }
 
 
+
+
+            }
+
+
         } catch (IOException e) {
-            /**
-             * 如果退出用户是管理员的话，通知所有窗口可以关闭了，并关闭所有SOCKET
-             */
+            //if the manager quited, send notification to all other users and quit the program
+            users.remove(currUser);
             if (currUser == manager){
                 for (User user : users){
                     try {
+                        user.getOos().writeUnshared("quit");
                         user.getSocket().close();
                     } catch (IOException ioException) {
                         ioException.printStackTrace();
                     }
                 }
+                System.exit(0);
             }
 
             //when an IO exception occurred, it means the current client/socket has disconnected
             // so remove it from the list
-            users.remove(currUser);
             StringBuffer buffer = new StringBuffer();
             for (User user : users){
                 buffer.append(user.getId() + "."+ user.getUsername());
@@ -144,25 +168,7 @@ public class WhiteBoardServer {
         }
     }
 
-    private static void serveUserList(Socket client){
-        DataInputStream in;
-        DataOutputStream out = null;
 
-        try {
-            in = new DataInputStream(client.getInputStream());
-            out = new DataOutputStream(client.getOutputStream());
-            String username = in.readUTF();
-            User currUser = new User();
-            currUser.setSocket(client);
-            currUser.setId(count.getAndIncrement());
-            currUser.setUsername(username);
-            users.add(currUser);
-            System.out.println(users);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
 
     public static void main(String[] args) {
 //        ServerGUI gui = new ServerGUI();
