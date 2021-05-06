@@ -5,7 +5,6 @@ import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
@@ -48,7 +47,9 @@ public class CreateWhiteBoard {
             e.printStackTrace();
         }
         ObjectOutputStream oos = null;
-        ObjectInputStream ois = null;
+        ObjectInputStream ois  = null;
+        DataOutputStream dos  = null;
+        DataInputStream dis   = null;
 
         WhiteBoard whiteBoard = null;
         if (client != null){
@@ -56,11 +57,14 @@ public class CreateWhiteBoard {
             try {
                 oos = new ObjectOutputStream(client.getOutputStream());
                 ois = new ObjectInputStream(client.getInputStream());
+                dos = new DataOutputStream(client.getOutputStream());
 
                 whiteBoard = new WhiteBoard(oos);
                //sending username to the server
-                DataOutputStream dos = new DataOutputStream(client.getOutputStream());
+
                 dos.writeUTF(usernameFromInput);
+                //send an identifier to make server know that this socket is the manager
+                dos.writeBoolean(true);
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -74,13 +78,25 @@ public class CreateWhiteBoard {
                     LinkedList<AbstractShape>  shapes = (LinkedList) readObject;
                     whiteBoard.setShapes(shapes);
                     whiteBoard.paint(whiteBoard.getGraphics());
-                }
-                else if (readObject instanceof StringBuffer){
+                } else if (readObject instanceof StringBuffer){
                     StringBuffer buffer = (StringBuffer) readObject;
                     String s = buffer.toString();
                     String[] split = s.split(",");
+                    /**
+                     * 要做踢人功能的话，只在这里加listener,发消息给Server找到和ID对应的USER的socket,然后CLOSE
+                     */
                     whiteBoard.getUserList().setListData(split);
+                } else if (readObject instanceof String){
+                    String requestedUsername = (String) readObject;
+                    int i = JOptionPane.showConfirmDialog(null, requestedUsername + " wants to share your white board.", "New User", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (i == JOptionPane.YES_OPTION){
+                        oos.writeUnshared("permit");
+                    }
+                    else{
+                        oos.writeUnshared("reject");
+                    }
                 }
+
 
             }
             catch (StreamCorruptedException e){

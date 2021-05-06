@@ -16,7 +16,20 @@ public class User implements Serializable {
     private ObjectOutputStream oos;
     private DataInputStream dis;
     private DataOutputStream dos;
+    private boolean access = false;
     private static final long serialVersionUID = 1L;
+
+    public boolean isAccess() {
+        return access;
+    }
+
+    public void setAccess(boolean access) {
+        this.access = access;
+    }
+
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
+    }
 
     public ObjectInputStream getOis() {
         return ois;

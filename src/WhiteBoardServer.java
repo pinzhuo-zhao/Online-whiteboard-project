@@ -1,4 +1,6 @@
 import shapes.AbstractShape;
+
+import javax.swing.*;
 import java.io.*;
 import java.net.BindException;
 import java.net.ServerSocket;
@@ -6,6 +8,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.lang.System.exit;
 
 /**
  * @program: COMP90015A2
@@ -20,7 +24,6 @@ public class WhiteBoardServer {
     private static volatile User manager;
     private static volatile AtomicInteger count = new AtomicInteger(1);
     private static Boolean launched = false;
-    private static Boolean whiteboardCreated = false;
 
 
 
@@ -43,38 +46,68 @@ public class WhiteBoardServer {
             dos = new DataOutputStream(client.getOutputStream());
 
             String username = dis.readUTF();
+
             currUser = new User(count.getAndIncrement(),username,client,ois,oos,dis,dos);
-            users.add(currUser);
-            if (manager == null){
+
+            boolean isManager = dis.readBoolean();
+            if (isManager && manager == null){
                 manager = currUser;
+                currUser.setAccess(true);
+
+            }
+
+            else if (manager != null && !isManager){
+                //if manager is not null, it means the board has been created
+                // incoming users are allowed to enter the white board
+                manager.getOos().writeUnshared(username);
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+                String s = manager.getDis().readUTF();
+                System.out.println(s);
+                if (s.equals("permit")){
+                    currUser.getDos().writeUTF("permitted");
+                    currUser.setAccess(true);
+
+                }
+                else {
+                    currUser.getDos().writeUTF("Sorry, you are not allowed to access");
+                    currUser.getSocket().close();
+                }
             }
             /**
              * 在此处给MANAGER发弹窗，如果允许了，再给currUser发第一条回复
              * 允许:这里直接往下走，拒绝:直接断开当前socket并回复弹窗
              */
-            currUser.getOos().writeObject(storedShapes);
-            StringBuffer buffer = new StringBuffer();
-            for (User user : users){
-                buffer.append(user.getId() + "."+ user.getUsername());
-                buffer.append(",");
-            }
-            for (User user : users) {
-                user.getOos().writeUnshared(buffer);
-            }
-            while (true){
-                Object readObject = currUser.getOis().readObject();
-                AbstractShape shape = null;
-                if (readObject instanceof AbstractShape){
-                    shape = (AbstractShape)readObject;
-                }
-                storedShapes.add(shape);
 
-                for (User user : users){
-                    //make sure thread safety, write/readUnshared are used instead of write/readObject
-                    user.getOos().writeUnshared(storedShapes);
-
+                users.add(currUser);
+                currUser.getOos().writeObject(storedShapes);
+                StringBuffer buffer = new StringBuffer();
+                for (User user : users) {
+                    buffer.append(user.getId() + "." + user.getUsername());
+                    buffer.append(",");
                 }
-            }
+                for (User user : users) {
+                    user.getOos().writeUnshared(buffer);
+                }
+
+                while (true) {
+                    Object readObject = currUser.getOis().readObject();
+                    AbstractShape shape = null;
+                    if (readObject instanceof AbstractShape) {
+                        shape = (AbstractShape) readObject;
+                    }
+                    storedShapes.add(shape);
+
+                    for (User user : users) {
+                        //make sure thread safety, write/readUnshared are used instead of write/readObject
+                        user.getOos().writeUnshared(storedShapes);
+
+                    }
+                }
+
 
         } catch (IOException e) {
             /**
