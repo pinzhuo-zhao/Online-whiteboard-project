@@ -63,36 +63,25 @@ public class WhiteBoardServer {
             else if (manager != null && !isManager){
                 //if manager is not null, it means the board has been created
                 // incoming users are allowed to enter the white board
-                manager.getOos().writeUnshared(currUser.getId()+"."+currUser.getUsername());
-//                try {
-//                    Thread.sleep(1000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                String s = manager.getDis().readUTF();
-//                System.out.println(s);
-//                if (s.equals("permit")){
-//                    currUser.getDos().writeUTF("permitted");
-//                    currUser.setAccess(true);
-//
-//                }
-//                else {
-//                    currUser.getDos().writeUTF("Sorry, you are not allowed to access");
-//                    currUser.getSocket().close();
-//                }
+                ClientMessage request = new ClientMessage("request", currUser.getId() + "." + currUser.getUsername());
+                manager.getOos().writeUnshared(request);
+//                manager.getOos().writeUnshared(currUser.getId()+"."+currUser.getUsername());
             }
             /**
-             * 在此处给MANAGER发弹窗，如果允许了，再给currUser发第一条回复
-             * 允许:这里直接往下走，拒绝:直接断开当前socket并回复弹窗
+             * made a loop to check if the access request has been permitted by the manager
+             * if permitted, proceed
              */
             while (!allowedUsers.contains(currUser.getId()+"."+currUser.getUsername())){
                 if (rejectedUsers.contains(currUser.getId()+"."+currUser.getUsername())){
                     currUser.getDos().writeUTF("rejected");
+
                 }
             }
             if (!(currUser == manager)) {
+                //send a message to the client so the user knows that the manager proved the request
                 currUser.getDos().writeUTF("permitted");
             }
+            //initializing the previously drawn contents and current user list for the new user
             users.add(currUser);
             currUser.getOos().writeObject(storedShapes);
             StringBuffer buffer = new StringBuffer();
@@ -114,15 +103,21 @@ public class WhiteBoardServer {
                         //make sure thread safety, write/readUnshared are used instead of write/readObject
                         user.getOos().writeUnshared(storedShapes);
                     }
-                }else if (readObject instanceof String){
-                    String requestedUsername = (String) readObject;
-                    String[] split = requestedUsername.split("-");
-                    if (split[0].equals("accept")) {
-                        System.out.println(split[0]);
-                        System.out.println(split[1]);
-                        allowedUsers.add(split[1]);
-                    } else if (split[0].equals("reject")){
-                        rejectedUsers.add(split[1]);
+                }else if (readObject instanceof ClientMessage){
+                    ClientMessage response = (ClientMessage) readObject;
+                    if (response.getPrefix().equals("accept")){
+                        allowedUsers.add(response.getMessage());
+                    } else if (response.getPrefix().equals("reject")){
+                        rejectedUsers.add(response.getMessage());
+                    } else if (response.getPrefix().equals("kick")){
+                        int kickUser = Integer.parseInt(response.getMessage());
+                        for (User user :users){
+                            if (user.getId() == kickUser){
+                                user.getOos().writeUnshared(new ClientMessage("quit","Kicked"));
+                                user.getSocket().close();
+//                                users.remove(user);
+                            }
+                        }
                     }
 
                 }
@@ -139,7 +134,7 @@ public class WhiteBoardServer {
             if (currUser == manager){
                 for (User user : users){
                     try {
-                        user.getOos().writeUnshared("quit");
+                        user.getOos().writeUnshared(new ClientMessage("quit","Manager Disconnected"));
                         user.getSocket().close();
                     } catch (IOException ioException) {
                         ioException.printStackTrace();
@@ -191,10 +186,7 @@ public class WhiteBoardServer {
         try {
             while (true) {
                 Socket client = socket.accept();
-                /**
-                 * 怎么给MANAGER 的socket发送弹窗？
-                 * 直接在此处判断MANAGER是否已经有了，如果有了，就在此处
-                 */
+
                 Thread whiteBoardThread = new Thread(() -> serveWhiteBoard(client));
 //                Thread userListThread = new Thread(() -> serveUserList(client));
                 whiteBoardThread.start();

@@ -1,9 +1,12 @@
 import shapes.AbstractShape;
 
 import javax.swing.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 
@@ -15,7 +18,10 @@ import java.util.LinkedList;
  **/
 public class CreateWhiteBoard {
 
-
+    private static ObjectOutputStream oos = null;
+    private static  ObjectInputStream ois  = null;
+    private static DataOutputStream dos  = null;
+    private static DataInputStream dis   = null;
 
     /** the flag to check if the client is connected to the server or not **/
     private static volatile Boolean connect = false;
@@ -46,10 +52,7 @@ public class CreateWhiteBoard {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ObjectOutputStream oos = null;
-        ObjectInputStream ois  = null;
-        DataOutputStream dos  = null;
-        DataInputStream dis   = null;
+
 
         WhiteBoard whiteBoard = null;
         if (client != null){
@@ -59,7 +62,7 @@ public class CreateWhiteBoard {
                 ois = new ObjectInputStream(client.getInputStream());
                 dos = new DataOutputStream(client.getOutputStream());
 
-                whiteBoard = new WhiteBoard(oos);
+                whiteBoard = new WhiteBoard(oos,"Manager-" + usernameFromInput);
                 //sending username to the server
 
                 dos.writeUTF(usernameFromInput);
@@ -83,29 +86,57 @@ public class CreateWhiteBoard {
                     String s = buffer.toString();
                     String[] split = s.split(",");
                     /**
-                     * 发消息给Server找到和ID对应的USER的socket,然后CLOSE
-                     * 从这里往下
+                     * set the ActionListener for the user list to implement the kick function
+                     *
                      */
                     JList userList = whiteBoard.getUserList();
                     userList.setListData(split);
-                    ListSelectionModel selectionModel = whiteBoard.getUserList().getSelectionModel();
+                    ListModel listModel = userList.getModel();
 //                    selectionModel.addListSelectionListener();
+                    userList.addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseClicked(MouseEvent e) {
+                            int selectedIndex = userList.getSelectedIndex();
+                            String selectedUser = (String) userList.getSelectedValue();
+                            String[] idAndName = selectedUser.split("\\.");
+                            String id = idAndName[0];
+                            userList.clearSelection();
+                            if (!id.equals("1")) {
+                                int i = JOptionPane.showConfirmDialog(null, "Confirm to Kick " + selectedUser + " ?", "Kick User", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                                if (i == JOptionPane.YES_OPTION) {
+                                    ClientMessage kick = new ClientMessage("kick",id);
+                                    try {
+                                        oos.writeObject(kick);
+                                    } catch (IOException ioException) {
+                                        ioException.printStackTrace();
+                                    }
+                                } else {
 
-                } else if (readObject instanceof String){
-                    String requestedUsername = (String) readObject;
-                    int i = JOptionPane.showConfirmDialog(null, requestedUsername + " wants to share your white board.", "New User", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                    if (i == JOptionPane.YES_OPTION){
-                        oos.writeObject("accept-"+ requestedUsername);
-                    }
-                    else{
-                        oos.writeObject("reject-" + requestedUsername);
+                                }
+                            }
+                        }
+
+
+
+                    });
+
+                } else if (readObject instanceof ClientMessage){
+                    ClientMessage clientMessage = (ClientMessage) readObject;
+                    if (clientMessage.getPrefix().equals("request")) {
+                        int i = JOptionPane.showConfirmDialog(null, clientMessage.getMessage() + " wants to share your white board.", "New User", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                        if (i == JOptionPane.YES_OPTION) {
+                            ClientMessage accept = new ClientMessage("accept", clientMessage.getMessage());
+                            oos.writeObject(accept);
+                        } else {
+                            ClientMessage reject = new ClientMessage("reject", clientMessage.getMessage());
+                            oos.writeObject(reject);
+                        }
                     }
                 }
 
 
             }
-            catch (StreamCorruptedException e){
-                e.printStackTrace();
+            catch (SocketException e) {
             }
             catch (IOException e) {
                 e.printStackTrace();
@@ -118,34 +149,5 @@ public class CreateWhiteBoard {
 
 
     }
- /*   private static void getWhiteBoardMessage(WhiteBoard whiteBoard, Socket client){
-        ObjectInputStream in = null;
-        try {
-            in = new ObjectInputStream(client.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        while (connect){
-            try {
-                Object readObject = in.readObject();
-                if (readObject instanceof LinkedList) {
-                    LinkedList<AbstractShape> shapes = (LinkedList<AbstractShape>) readObject;
-                    whiteBoard.setShapes(shapes);
-                    whiteBoard.paint(whiteBoard.getGraphics());
-                }
-                else if (readObject instanceof StringBuffer){
-                    StringBuffer buffer = (StringBuffer) readObject;
-                    System.out.println(buffer.toString());
-                }
-            }
-            catch (StreamCorruptedException e){
-                e.printStackTrace();
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-    }*/
+
 }

@@ -73,7 +73,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
                 shapes.add(oval);
                 out.writeObject(oval);
             } else if (shape.equals("Circle")) {
-                graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)),Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)));
+                graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1),Math.abs(x2 - x1));
                 Circle circle = new Circle(x1, y1, x2, y2, whiteBoard.getColor());
                 shapes.add(circle);
                 out.writeObject(circle);

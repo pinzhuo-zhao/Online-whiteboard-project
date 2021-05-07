@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 
@@ -63,7 +64,7 @@ public class JoinWhiteBoard {
                 String permitMessage = dis.readUTF();
                 System.out.println(permitMessage);
                 if (permitMessage.equals("permitted")) {
-                    whiteBoard = new WhiteBoard(oos);
+                    whiteBoard = new WhiteBoard(oos,"User-"+usernameFromInput);
                 }
                 else if (permitMessage.equals("rejected")) {
                     System.out.println("Sorry, you are not allowed to access");
@@ -76,6 +77,7 @@ public class JoinWhiteBoard {
 
         }
         while (connect){
+            //keep listening to the message sent back by the server to update the drawings/userlist
             try {
                 Object readObject = ois.readUnshared();
                 if (readObject instanceof LinkedList) {
@@ -89,20 +91,26 @@ public class JoinWhiteBoard {
                     String[] split = s.split(",");
                     whiteBoard.getUserList().setListData(split);
                 }
-                else if (readObject instanceof String){
-                    String message = ((String) readObject);
-                    if (message.equals("quit")) {
-                        JOptionPane.showMessageDialog(null,"The manager has disconnected, please close the app","Notification",JOptionPane.WARNING_MESSAGE);
+                else if (readObject instanceof ClientMessage){
+                    ClientMessage message = ((ClientMessage) readObject);
+                    //if the server
+                    if (message.getPrefix().equals("quit")) {
+                        if (message.getMessage().equals("Manager Disconnected")) {
+                            JOptionPane.showMessageDialog(null, "The manager has disconnected, please close the app", "Notification", JOptionPane.WARNING_MESSAGE);
+                        } else if (message.getMessage().equals("Kicked")){
+                            JOptionPane.showMessageDialog(null, usernameFromInput+", you are kicked by the manager, please close the app", "Notification", JOptionPane.WARNING_MESSAGE);
+                            System.out.println("You're kicked");
+                            System.exit(0);
+                    }
 
                     }
                 }
 
 
             }
-            catch (StreamCorruptedException e){
-                e.printStackTrace();
-            }
-            catch (IOException e) {
+            catch (EOFException | SocketException e){
+
+            } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();

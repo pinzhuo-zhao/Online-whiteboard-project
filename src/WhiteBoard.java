@@ -14,6 +14,7 @@ import java.util.LinkedList;
  * @create: 2021-04-30 21:22
  **/
 public class WhiteBoard extends JPanel {
+    private String title;
     private volatile Color color;
     private volatile String shapeType;
     private LinkedList<AbstractShape> shapes = new LinkedList<>();
@@ -44,8 +45,9 @@ public class WhiteBoard extends JPanel {
         return shapes;
     }
 
-    public WhiteBoard(ObjectOutputStream out) {
+    public WhiteBoard(ObjectOutputStream out,String title) {
         this.out = out;
+        this.title = title;
         setLayout(new FlowLayout());
         setVisible(true);
         init();
@@ -59,7 +61,7 @@ public class WhiteBoard extends JPanel {
     }
 
     private void init() {
-        JFrame mainWindow = new JFrame("White Board");
+        JFrame mainWindow = new JFrame(title);
         mainWindow.setSize(800, 600);
         mainWindow.setLocationRelativeTo(null);
         mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -69,11 +71,6 @@ public class WhiteBoard extends JPanel {
         addUserList(mainWindow);
         //adding the white board panel to the main window
         mainWindow.add(this, BorderLayout.CENTER);
-
-
-       /* JPanel colorSelection = new JPanel();
-        colorSelection.setPreferredSize(new Dimension(100, 700));
-        mainWindow.add(colorSelection, BorderLayout.WEST);*/
 
 
         this.setPreferredSize(new Dimension(600, 600));
@@ -147,5 +144,8 @@ public class WhiteBoard extends JPanel {
         shape.draw(g);
     }
 
+    public static void main(String[] args) {
+        new WhiteBoard();
+    }
 
 }

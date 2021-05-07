@@ -16,6 +16,6 @@ public class Circle extends AbstractShape {
     @Override
     public void draw(Graphics graphics) {
         graphics.setColor(color);
-        graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)),Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)));
+        graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1),Math.abs(x2 - x1));
     }
 }
