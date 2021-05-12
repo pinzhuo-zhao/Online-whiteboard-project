@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author: Pinzhuo Zhao, StudentID:1043915
  * @create: 2021-05-02 19:55
  **/
-public class User implements Serializable {
+public class User {
     private int id;
     private String username;
     private Socket socket;
@@ -16,20 +16,7 @@ public class User implements Serializable {
     private ObjectOutputStream oos;
     private DataInputStream dis;
     private DataOutputStream dos;
-    private boolean access = false;
-    private static final long serialVersionUID = 1L;
 
-    public boolean isAccess() {
-        return access;
-    }
-
-    public void setAccess(boolean access) {
-        this.access = access;
-    }
-
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
 
     public ObjectInputStream getOis() {
         return ois;

@@ -5,7 +5,9 @@ import java.io.*;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,7 +20,7 @@ import static java.lang.System.exit;
  * @create: 2021-05-02 16:16
  **/
 public class WhiteBoardServer {
-    private static volatile Integer port =9999;
+    private static volatile Integer port;
     private static volatile LinkedList<AbstractShape> storedShapes = new LinkedList<>();
     private static volatile LinkedList<User> users = new LinkedList<>();
     private static volatile LinkedList<String> allowedUsers = new LinkedList<>();
@@ -40,7 +42,7 @@ public class WhiteBoardServer {
         ObjectInputStream ois;
         ObjectOutputStream oos = null;
         DataInputStream dis;
-        DataOutputStream dos = null;
+        DataOutputStream dos;
         User currUser = null;
         try {
             ois = new ObjectInputStream(client.getInputStream());
@@ -65,7 +67,6 @@ public class WhiteBoardServer {
                 // incoming users are allowed to enter the white board
                 ClientMessage request = new ClientMessage("request", currUser.getId() + "." + currUser.getUsername());
                 manager.getOos().writeUnshared(request);
-//                manager.getOos().writeUnshared(currUser.getId()+"."+currUser.getUsername());
             }
             /**
              * made a loop to check if the access request has been permitted by the manager
@@ -118,6 +119,13 @@ public class WhiteBoardServer {
 //                                users.remove(user);
                             }
                         }
+                    }  else if (response.getPrefix().equals("chat")){
+                        String message = response.getMessage();
+                        for (User user: users){
+                            String timeStamp = new SimpleDateFormat("HH:mm").format(Calendar.getInstance().getTime());
+                            String userMessage = currUser.getUsername() + " at " + timeStamp +" : " + message;
+                            user.getOos().writeUnshared(new ClientMessage("chat",userMessage));
+                        }
                     }
 
                 }
@@ -166,17 +174,17 @@ public class WhiteBoardServer {
 
 
     public static void main(String[] args) {
-//        ServerGUI gui = new ServerGUI();
+        ServerGUI gui = new ServerGUI();
         ServerSocket socket = null;
         while (!launched) {
             if (port != null) {
                 try {
                     socket = new ServerSocket(port);
                     launched = true;
-//                    gui.getResponse().setText("White Board Server launched at port: " + port);
+                    gui.getResponse().setText("White Board Server launched at port: " + port);
                     //prompt the user if the input port is already in use
                 } catch (BindException e) {
-//                    gui.getResponse().setText("Port already in use, try again");
+                    gui.getResponse().setText("Port already in use, try again");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -186,11 +194,8 @@ public class WhiteBoardServer {
         try {
             while (true) {
                 Socket client = socket.accept();
-
                 Thread whiteBoardThread = new Thread(() -> serveWhiteBoard(client));
-//                Thread userListThread = new Thread(() -> serveUserList(client));
                 whiteBoardThread.start();
-//                userListThread.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -206,5 +211,7 @@ public class WhiteBoardServer {
         }
 
     }
+
+
 
 }

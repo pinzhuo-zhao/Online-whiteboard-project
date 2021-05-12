@@ -87,55 +87,7 @@ public class DrawActionListener extends MouseAdapter implements KeyListener {
 
     }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
 
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-    /*    x2 = e.getX();
-        y2 = e.getY();
-//        graphics.drawLine(x1, y1, x2, y2);
-        graphics.setColor(whiteBoard.getColor());
-        try {
-            String shape = whiteBoard.getShapeType();
-            if (shape.equals("Line")) {
-                whiteBoard.paint(graphics);
-                graphics.drawLine(x1, y1, x2, y2);
-
-
-
-
-            } else if (shape.equals("Rectangle")) {
-                whiteBoard.paint(graphics);
-                graphics.drawRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
-
-
-            } else if (shape.equals("Oval")) {
-                whiteBoard.paint(graphics);
-                graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
-
-
-            } else if (shape.equals("Circle")) {
-                whiteBoard.paint(graphics);
-                //graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)),Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1)));
-                graphics.drawOval(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(x2 - x1));
-            }
-        }catch(NullPointerException ex){
-//            JOptionPane.showMessageDialog(null, "alert", "alert", JOptionPane.ERROR_MESSAGE);*/
-    //    }
-    }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-
-    }
 
     @Override
     public void keyTyped(KeyEvent e) {

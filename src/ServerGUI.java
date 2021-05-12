@@ -25,7 +25,7 @@ public class ServerGUI extends JFrame {
         init();
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1100, 700);
+        setSize(600, 600);
     }
 
     private void init() {
@@ -62,6 +62,8 @@ public class ServerGUI extends JFrame {
         add(textAreaBox);
 
     }
+
+
 
 
 }

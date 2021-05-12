@@ -1,11 +1,18 @@
 import shapes.AbstractShape;
 
 import javax.swing.*;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.Flow;
 
 /**
  * @program: COMP90015A2
@@ -20,6 +27,12 @@ public class WhiteBoard extends JPanel {
     private LinkedList<AbstractShape> shapes = new LinkedList<>();
     private ObjectOutputStream out;
     private JList userList = new JList();
+    private JTextField chatInput;
+    private JTextArea chatArea;
+
+    public JTextArea getChatArea() {
+        return chatArea;
+    }
 
     public void setUserList(JList userList) {
         this.userList = userList;
@@ -62,13 +75,14 @@ public class WhiteBoard extends JPanel {
 
     private void init() {
         JFrame mainWindow = new JFrame(title);
-        mainWindow.setSize(800, 600);
+        mainWindow.setSize(1000, 900);
         mainWindow.setLocationRelativeTo(null);
         mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //        mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        mainWindow.setLayout(new BorderLayout());
+//        mainWindow.setLayout(new BorderLayout());
         addShapePanel(mainWindow);
         addUserList(mainWindow);
+        addChatPanel(mainWindow);
         //adding the white board panel to the main window
         mainWindow.add(this, BorderLayout.CENTER);
 
@@ -129,6 +143,48 @@ public class WhiteBoard extends JPanel {
         userListPanel.add(users, BorderLayout.NORTH);
         userListPanel.add(userList, BorderLayout.SOUTH);
         mainWindow.add(userListPanel, BorderLayout.EAST);
+
+
+    }
+
+    private void addChatPanel(JFrame mainWindow){
+        JPanel chatPanel = new JPanel();
+        chatPanel.setPreferredSize(new Dimension(600, 300));
+        JLabel chatLabel = new JLabel("Chat Window");
+        chatArea = new JTextArea(10,25);
+        JScrollPane chatScrollPane = new JScrollPane(chatArea);
+        DefaultCaret caret = (DefaultCaret)chatArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        chatInput = new JTextField(20);
+        JButton sendButton = new JButton("Send");
+        Box inputBox = Box.createHorizontalBox();
+        Box messageBox = Box.createVerticalBox();
+
+        inputBox.add(chatInput);
+        inputBox.add(sendButton);
+        messageBox.add(chatLabel);
+        messageBox.add(chatScrollPane);
+        chatPanel.add(messageBox);
+        chatPanel.add(inputBox);
+
+
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                String input = chatInput.getText().trim();
+                try {
+                    out.writeUnshared(new ClientMessage("chat",input));
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+                chatInput.setText("");
+
+
+            }
+        });
+        mainWindow.add(chatPanel, BorderLayout.SOUTH);
+
 
 
     }

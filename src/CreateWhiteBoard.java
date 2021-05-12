@@ -30,12 +30,12 @@ public class CreateWhiteBoard {
         Socket client = null;
         String usernameFromInput = null;
         try {
-//            String ipFromInput = args[0];
-//            String portFromInput = args[1];
-//            String usernameFromInput = args[2];
-            String ipFromInput = "localhost";
-            String portFromInput = "9999";
-            usernameFromInput = "Manager";
+            String ipFromInput = args[0];
+            String portFromInput = args[1];
+            usernameFromInput = args[2];
+//            String ipFromInput = "localhost";
+//            String portFromInput = "9999";
+//            usernameFromInput = "Manager";
             int port = Integer.parseInt(portFromInput);
             client = new Socket(ipFromInput,port);
 
@@ -91,12 +91,9 @@ public class CreateWhiteBoard {
                      */
                     JList userList = whiteBoard.getUserList();
                     userList.setListData(split);
-                    ListModel listModel = userList.getModel();
-//                    selectionModel.addListSelectionListener();
                     userList.addMouseListener(new MouseAdapter() {
                         @Override
                         public void mouseClicked(MouseEvent e) {
-                            int selectedIndex = userList.getSelectedIndex();
                             String selectedUser = (String) userList.getSelectedValue();
                             String[] idAndName = selectedUser.split("\\.");
                             String id = idAndName[0];
@@ -131,6 +128,9 @@ public class CreateWhiteBoard {
                             ClientMessage reject = new ClientMessage("reject", clientMessage.getMessage());
                             oos.writeObject(reject);
                         }
+                    } else if (clientMessage.getPrefix().equals("chat")){
+                        whiteBoard.getChatArea().append("\n");
+                        whiteBoard.getChatArea().append(clientMessage.getMessage());
                     }
                 }
 

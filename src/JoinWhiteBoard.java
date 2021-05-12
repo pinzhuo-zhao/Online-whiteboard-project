@@ -23,12 +23,12 @@ public class JoinWhiteBoard {
         Socket client = null;
         String usernameFromInput = null;
         try {
-//            String ipFromInput = args[0];
-//            String portFromInput = args[1];
-//            String usernameFromInput = args[2];
-            String ipFromInput = "localhost";
-            String portFromInput = "9999";
-            usernameFromInput = "User";
+            String ipFromInput = args[0];
+            String portFromInput = args[1];
+            usernameFromInput = args[2];
+//            String ipFromInput = "localhost";
+//            String portFromInput = "9999";
+//            usernameFromInput = "User";
             int port = Integer.parseInt(portFromInput);
             client = new Socket(ipFromInput,port);
 
@@ -65,8 +65,7 @@ public class JoinWhiteBoard {
                 System.out.println(permitMessage);
                 if (permitMessage.equals("permitted")) {
                     whiteBoard = new WhiteBoard(oos,"User-"+usernameFromInput);
-                }
-                else if (permitMessage.equals("rejected")) {
+                } else if (permitMessage.equals("rejected")) {
                     System.out.println("Sorry, you are not allowed to access");
                     System.exit(0);
                 }
@@ -101,8 +100,10 @@ public class JoinWhiteBoard {
                             JOptionPane.showMessageDialog(null, usernameFromInput+", you are kicked by the manager, please close the app", "Notification", JOptionPane.WARNING_MESSAGE);
                             System.out.println("You're kicked");
                             System.exit(0);
-                    }
-
+                        }
+                    } else if (message.getPrefix().equals("chat")){
+                        whiteBoard.getChatArea().append("\n");
+                        whiteBoard.getChatArea().append(message.getMessage());
                     }
                 }
 
